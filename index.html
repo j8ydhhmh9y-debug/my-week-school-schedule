@@ -328,7 +328,7 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     const firebaseApp=initializeApp({apiKey:'AIzaSyCzsw-s2ScfSrmfjdxI38v_mRZPGHjAFkM',authDomain:'school-week-f73e8.firebaseapp.com',projectId:'school-week-f73e8',storageBucket:'school-week-f73e8.firebasestorage.app',messagingSenderId:'1023102623425',appId:'1:1023102623425:web:cd59c5775e9125a39b7e40',measurementId:'G-K8ZEV38G5S'});
     const auth=getAuth(firebaseApp), db=getFirestore(firebaseApp), provider=new GoogleAuthProvider();
@@ -412,14 +412,13 @@
       if(cloudDoc.exists()){const data=cloudDoc.data();if(Array.isArray(data.schedule)&&data.schedule.length===5)plans=data.schedule;if(data.reminder)el('reminderText').textContent=data.reminder}else{await setDoc(doc(db,'users',user.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()})}
       cloudReady=true;setCloudStatus('Saved privately in the cloud');await loadRoster();render();
     }
-    async function beginGoogleRedirect(){try{sessionStorage.setItem('myWeekSigningIn','1');await signInWithRedirect(auth,provider)}catch(e){console.error(e);sessionStorage.removeItem('myWeekSigningIn');el('authError').textContent=`Could not sign in (${e.code||'unknown error'}). Please try again.`}}
+    async function beginGooglePopup(){try{el('googleSignIn').textContent='Signing in…';const result=await signInWithPopup(auth,provider);if(!schoolEmail(result.user.email)){await signOut(auth);el('authError').textContent='Please use your @proedschool.com school account.';el('googleSignIn').textContent='Continue with Google';return}await startCloud(result.user);if(window.opener)setTimeout(()=>window.close(),700)}catch(e){console.error(e);el('googleSignIn').textContent='Continue with Google';el('authError').textContent=e.code==='auth/popup-closed-by-user'?'Sign-in was cancelled.':`Could not sign in (${e.code||'unknown error'}). Please try again.`}}
     if(openedAsLocalFile){el('authError').textContent='Sign-in will open securely in a new tab.'}
     if(authWindow&&!openedAsLocalFile){el('googleSignIn').href='#';el('googleSignIn').removeAttribute('target')}
-    el('googleSignIn').onclick=e=>{el('authError').textContent='';if(authWindow&&!openedAsLocalFile){e.preventDefault();beginGoogleRedirect();return}el('authError').textContent='Complete sign-in in the new tab.'};
+    el('googleSignIn').onclick=e=>{el('authError').textContent='';if(authWindow&&!openedAsLocalFile){e.preventDefault();beginGooglePopup();return}el('authError').textContent='Complete sign-in in the new tab.'};
     el('profileButton').onclick=()=>el('accountMenu').classList.toggle('open');
     el('signOutButton').onclick=()=>signOut(auth);
     document.addEventListener('click',e=>{if(!el('accountMenu').contains(e.target)&&!el('profileButton').contains(e.target))el('accountMenu').classList.remove('open')});
-    getRedirectResult(auth).then(result=>{if(authWindow&&!openedAsLocalFile&&!result&&!auth.currentUser&&!sessionStorage.getItem('myWeekSigningIn'))beginGoogleRedirect()}).catch(e=>{console.error(e);sessionStorage.removeItem('myWeekSigningIn');el('authError').textContent=`Could not finish sign-in (${e.code||'unknown error'}). Please try again.`});
     onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}sessionStorage.removeItem('myWeekSigningIn');try{await startCloud(user);if(authWindow&&window.opener)setTimeout(()=>window.close(),900)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
 
     const formatMonth = d => d.toLocaleDateString('en-GB',{month:'long'});

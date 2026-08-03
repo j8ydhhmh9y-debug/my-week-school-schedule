@@ -335,6 +335,7 @@
     provider.setCustomParameters({hd:'proedschool.com',prompt:'select_account'});
     const hostedApp='https://j8ydhhmh9y-debug.github.io/my-week-school-schedule/';
     const openedAsLocalFile=location.protocol==='file:';
+    const authWindow=new URLSearchParams(location.search).get('auth')==='continue';
     let cloudUser=null, cloudReady=false, saveTimer=null;
     const el = id => document.getElementById(id);
     const teacherView=new URLSearchParams(location.search).get('view')==='teacher';
@@ -411,13 +412,14 @@
       if(cloudDoc.exists()){const data=cloudDoc.data();if(Array.isArray(data.schedule)&&data.schedule.length===5)plans=data.schedule;if(data.reminder)el('reminderText').textContent=data.reminder}else{await setDoc(doc(db,'users',user.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()})}
       cloudReady=true;setCloudStatus('Saved privately in the cloud');await loadRoster();render();
     }
-    if(openedAsLocalFile){el('googleSignIn').textContent='Open secure online app';el('authError').textContent='Google Sign-In works in the online app.'}
-    el('googleSignIn').onclick=async()=>{el('authError').textContent='';if(openedAsLocalFile){location.href=hostedApp;return}try{sessionStorage.setItem('myWeekSigningIn','1');await signInWithRedirect(auth,provider)}catch(e){console.error(e);el('authError').textContent=`Could not sign in (${e.code||'unknown error'}). Please try again.`}};
+    async function beginGoogleRedirect(){try{sessionStorage.setItem('myWeekSigningIn','1');await signInWithRedirect(auth,provider)}catch(e){console.error(e);sessionStorage.removeItem('myWeekSigningIn');el('authError').textContent=`Could not sign in (${e.code||'unknown error'}). Please try again.`}}
+    if(openedAsLocalFile){el('authError').textContent='Sign-in will open securely in a new tab.'}
+    el('googleSignIn').onclick=()=>{el('authError').textContent='';if(authWindow&&!openedAsLocalFile){beginGoogleRedirect();return}const loginTab=window.open(hostedApp+'?auth=continue','myWeekGoogleSignIn');el('authError').textContent=loginTab?'Complete sign-in in the new tab.':'Please allow a new tab for Google Sign-In.'};
     el('profileButton').onclick=()=>el('accountMenu').classList.toggle('open');
     el('signOutButton').onclick=()=>signOut(auth);
     document.addEventListener('click',e=>{if(!el('accountMenu').contains(e.target)&&!el('profileButton').contains(e.target))el('accountMenu').classList.remove('open')});
-    getRedirectResult(auth).catch(e=>{console.error(e);el('authError').textContent=`Could not finish sign-in (${e.code||'unknown error'}). Please try again.`});
-    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}sessionStorage.removeItem('myWeekSigningIn');try{await startCloud(user)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
+    getRedirectResult(auth).then(result=>{if(authWindow&&!openedAsLocalFile&&!result&&!auth.currentUser&&!sessionStorage.getItem('myWeekSigningIn'))beginGoogleRedirect()}).catch(e=>{console.error(e);sessionStorage.removeItem('myWeekSigningIn');el('authError').textContent=`Could not finish sign-in (${e.code||'unknown error'}). Please try again.`});
+    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}sessionStorage.removeItem('myWeekSigningIn');try{await startCloud(user);if(authWindow&&window.opener)setTimeout(()=>window.close(),900)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
 
     const formatMonth = d => d.toLocaleDateString('en-GB',{month:'long'});
     const getMonday = () => { const d = new Date(baseMonday); d.setDate(d.getDate()+weekOffset*7); return d; };

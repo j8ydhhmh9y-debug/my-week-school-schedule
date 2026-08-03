@@ -328,14 +328,14 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     const firebaseApp=initializeApp({apiKey:'AIzaSyCzsw-s2ScfSrmfjdxI38v_mRZPGHjAFkM',authDomain:'school-week-f73e8.firebaseapp.com',projectId:'school-week-f73e8',storageBucket:'school-week-f73e8.firebasestorage.app',messagingSenderId:'1023102623425',appId:'1:1023102623425:web:cd59c5775e9125a39b7e40',measurementId:'G-K8ZEV38G5S'});
     const auth=getAuth(firebaseApp), db=getFirestore(firebaseApp), provider=new GoogleAuthProvider();
     provider.setCustomParameters({hd:'proedschool.com',prompt:'select_account'});
-    const hostedApp='https://j8ydhhmh9y-debug.github.io/my-week-school-schedule/';
+    const hostedApp='https://school-week-f73e8.firebaseapp.com/';
     const openedAsLocalFile=location.protocol==='file:';
-    const authWindow=new URLSearchParams(location.search).get('auth')==='continue';
+    const runningOnFirebase=location.hostname==='school-week-f73e8.firebaseapp.com';
     let cloudUser=null, cloudReady=false, saveTimer=null;
     const el = id => document.getElementById(id);
     const teacherView=new URLSearchParams(location.search).get('view')==='teacher';
@@ -397,7 +397,7 @@
       localStorage.setItem('myWeekReminder',el('reminderText').textContent);
       if(!cloudUser||!cloudReady)return;
       clearTimeout(saveTimer);setCloudStatus('Saving…');
-      saveTimer=setTimeout(async()=>{try{await setDoc(doc(db,'users',cloudUser.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()},{merge:true});setCloudStatus('Saved privately in the cloud')}catch(e){console.error(e);setCloudStatus('Could not save — kept on this device')}},350);
+      saveTimer=setTimeout(async()=>{try{await setDoc(doc(db,'users',cloudUser.uid,'private','app'),{scheduleJSON:JSON.stringify(plans),reminder:el('reminderText').textContent,updatedAt:Date.now()},{merge:true});setCloudStatus('Saved privately in the cloud')}catch(e){console.error(e);setCloudStatus('Could not save — kept on this device')}},350);
     }
     async function loadRoster(){
       const holder=el('rosterList');holder.innerHTML='';
@@ -409,17 +409,18 @@
       const profile={name,email:user.email,role:'student',photoURL:user.photoURL||''};
       await setDoc(doc(db,'users',user.uid),profile,{merge:true});await setDoc(doc(db,'roster',user.uid),profile,{merge:true});
       const cloudDoc=await getDoc(doc(db,'users',user.uid,'private','app'));
-      if(cloudDoc.exists()){const data=cloudDoc.data();if(Array.isArray(data.schedule)&&data.schedule.length===5)plans=data.schedule;if(data.reminder)el('reminderText').textContent=data.reminder}else{await setDoc(doc(db,'users',user.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()})}
+      if(cloudDoc.exists()){const data=cloudDoc.data();try{const cloudPlans=JSON.parse(data.scheduleJSON||'null');if(Array.isArray(cloudPlans)&&cloudPlans.length===5)plans=cloudPlans}catch(e){console.error(e)}if(data.reminder)el('reminderText').textContent=data.reminder}else{await setDoc(doc(db,'users',user.uid,'private','app'),{scheduleJSON:JSON.stringify(plans),reminder:el('reminderText').textContent,updatedAt:Date.now()})}
       cloudReady=true;setCloudStatus('Saved privately in the cloud');await loadRoster();render();
     }
-    async function beginGooglePopup(){try{el('googleSignIn').textContent='Signing in…';const result=await signInWithPopup(auth,provider);if(!schoolEmail(result.user.email)){await signOut(auth);el('authError').textContent='Please use your @proedschool.com school account.';el('googleSignIn').textContent='Continue with Google';return}await startCloud(result.user);if(window.opener)setTimeout(()=>window.close(),700)}catch(e){console.error(e);el('googleSignIn').textContent='Continue with Google';el('authError').textContent=e.code==='auth/popup-closed-by-user'?'Sign-in was cancelled.':`Could not sign in (${e.code||'unknown error'}). Please try again.`}}
+    async function beginGoogleSignIn(){try{el('googleSignIn').textContent='Opening Google…';await signInWithRedirect(auth,provider)}catch(e){console.error(e);el('googleSignIn').textContent='Continue with Google';el('authError').textContent=`Could not sign in (${e.code||'unknown error'}). Please try again.`}}
     if(openedAsLocalFile){el('authError').textContent='Sign-in will open securely in a new tab.'}
-    if(authWindow&&!openedAsLocalFile){el('googleSignIn').href='#';el('googleSignIn').removeAttribute('target')}
-    el('googleSignIn').onclick=e=>{el('authError').textContent='';if(authWindow&&!openedAsLocalFile){e.preventDefault();beginGooglePopup();return}el('authError').textContent='Complete sign-in in the new tab.'};
+    if(runningOnFirebase){el('googleSignIn').href='#';el('googleSignIn').removeAttribute('target')}
+    el('googleSignIn').onclick=e=>{el('authError').textContent='';if(runningOnFirebase){e.preventDefault();beginGoogleSignIn();return}el('authError').textContent='Continue in the secure Firebase app.'};
     el('profileButton').onclick=()=>el('accountMenu').classList.toggle('open');
     el('signOutButton').onclick=()=>signOut(auth);
     document.addEventListener('click',e=>{if(!el('accountMenu').contains(e.target)&&!el('profileButton').contains(e.target))el('accountMenu').classList.remove('open')});
-    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}sessionStorage.removeItem('myWeekSigningIn');try{await startCloud(user);if(authWindow&&window.opener)setTimeout(()=>window.close(),900)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
+    getRedirectResult(auth).catch(e=>{console.error(e);el('authError').textContent=`Could not finish sign-in (${e.code||'unknown error'}). Please try again.`});
+    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}try{await startCloud(user)}catch(e){console.error(e);el('authError').textContent='Signed in, but cloud storage is unavailable. Your schedule is still saved on this device.';el('profileName').textContent=user.displayName||'Student';el('profileAvatar').textContent=(user.displayName||'S').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();el('authScreen').classList.add('hidden');render()}});
 
     const formatMonth = d => d.toLocaleDateString('en-GB',{month:'long'});
     const getMonday = () => { const d = new Date(baseMonday); d.setDate(d.getDate()+weekOffset*7); return d; };

@@ -328,11 +328,13 @@
 
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getAuth, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
     import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
     const firebaseApp=initializeApp({apiKey:'AIzaSyCzsw-s2ScfSrmfjdxI38v_mRZPGHjAFkM',authDomain:'school-week-f73e8.firebaseapp.com',projectId:'school-week-f73e8',storageBucket:'school-week-f73e8.firebasestorage.app',messagingSenderId:'1023102623425',appId:'1:1023102623425:web:cd59c5775e9125a39b7e40',measurementId:'G-K8ZEV38G5S'});
     const auth=getAuth(firebaseApp), db=getFirestore(firebaseApp), provider=new GoogleAuthProvider();
     provider.setCustomParameters({hd:'proedschool.com',prompt:'select_account'});
+    const hostedApp='https://j8ydhhmh9y-debug.github.io/my-week-school-schedule/';
+    const openedAsLocalFile=location.protocol==='file:';
     let cloudUser=null, cloudReady=false, saveTimer=null;
     const el = id => document.getElementById(id);
     const teacherView=new URLSearchParams(location.search).get('view')==='teacher';
@@ -409,11 +411,13 @@
       if(cloudDoc.exists()){const data=cloudDoc.data();if(Array.isArray(data.schedule)&&data.schedule.length===5)plans=data.schedule;if(data.reminder)el('reminderText').textContent=data.reminder}else{await setDoc(doc(db,'users',user.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()})}
       cloudReady=true;setCloudStatus('Saved privately in the cloud');await loadRoster();render();
     }
-    el('googleSignIn').onclick=async()=>{el('authError').textContent='';try{const result=await signInWithPopup(auth,provider);if(!schoolEmail(result.user.email)){await signOut(auth);el('authError').textContent='Please use your @proedschool.com school account.'}}catch(e){console.error(e);el('authError').textContent=e.code==='auth/popup-closed-by-user'?'Sign-in was cancelled.':`Could not sign in (${e.code||'unknown error'}). Please try again.`}};
+    if(openedAsLocalFile){el('googleSignIn').textContent='Open secure online app';el('authError').textContent='Google Sign-In works in the online app.'}
+    el('googleSignIn').onclick=async()=>{el('authError').textContent='';if(openedAsLocalFile){location.href=hostedApp;return}try{sessionStorage.setItem('myWeekSigningIn','1');await signInWithRedirect(auth,provider)}catch(e){console.error(e);el('authError').textContent=`Could not sign in (${e.code||'unknown error'}). Please try again.`}};
     el('profileButton').onclick=()=>el('accountMenu').classList.toggle('open');
     el('signOutButton').onclick=()=>signOut(auth);
     document.addEventListener('click',e=>{if(!el('accountMenu').contains(e.target)&&!el('profileButton').contains(e.target))el('accountMenu').classList.remove('open')});
-    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}try{await startCloud(user)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
+    getRedirectResult(auth).catch(e=>{console.error(e);el('authError').textContent=`Could not finish sign-in (${e.code||'unknown error'}). Please try again.`});
+    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}sessionStorage.removeItem('myWeekSigningIn');try{await startCloud(user)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
 
     const formatMonth = d => d.toLocaleDateString('en-GB',{month:'long'});
     const getMonday = () => { const d = new Date(baseMonday); d.setDate(d.getDate()+weekOffset*7); return d; };

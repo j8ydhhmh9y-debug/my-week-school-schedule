@@ -1,0 +1,12 @@
+{
+  "name": "My Week — School Schedule",
+  "short_name": "My Week",
+  "description": "A calm weekly school schedule for Year 7.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f6ee",
+  "theme_color": "#255e4a",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

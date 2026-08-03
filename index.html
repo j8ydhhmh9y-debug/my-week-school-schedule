@@ -7,6 +7,9 @@
   <title>My Week — School Schedule</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" href="icon.svg" type="image/svg+xml" />
+  <script>
+    if(location.hostname==='j8ydhhmh9y-debug.github.io')location.replace('https://school-week-f73e8.firebaseapp.com/');
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -283,7 +286,7 @@
     </section>
   </main>
 
-  <div class="auth-screen" id="authScreen"><div class="auth-card"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5"/><path d="M8 8h8M8 12h6"/></svg></div><h2>Your private school week</h2><p>Sign in with your <strong>@proedschool.com</strong> Google account. Your schedule and reminders will be stored separately and cannot be opened by another student.</p><a class="google-signin" id="googleSignIn" href="https://j8ydhhmh9y-debug.github.io/my-week-school-schedule/?auth=continue" target="_blank" rel="noopener">Continue with Google</a><div class="auth-error" id="authError"></div></div></div>
+  <div class="auth-screen" id="authScreen"><div class="auth-card"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5"/><path d="M8 8h8M8 12h6"/></svg></div><h2>Your private school week</h2><p>Sign in with your <strong>@proedschool.com</strong> Google account. Your schedule and reminders will be stored separately and cannot be opened by another student.</p><a class="google-signin" id="googleSignIn" href="https://school-week-f73e8.firebaseapp.com/">Continue with Google</a><div class="auth-error" id="authError"></div></div></div>
 
   <div class="modal" id="modal" role="dialog" aria-modal="true">
     <div class="modal-card"><div class="modal-top"><span class="modal-tag" id="modalTag">Class</span><button class="close" id="closeModal">×</button></div><h2 id="modalTitle"></h2><div class="modal-sub" id="modalTeacher"></div><div class="detail-grid"><div class="detail"><small>Time</small><strong id="modalTime"></strong></div><div class="detail"><small>Room</small><strong id="modalRoom"></strong></div><div class="detail"><small>Duration</small><strong>As scheduled</strong></div><div class="detail"><small>Status</small><strong>On schedule</strong></div></div><button class="change-btn" id="changeClass" type="button">Change</button></div>

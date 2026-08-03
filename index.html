@@ -44,9 +44,26 @@
     .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.03em; }
     .brand-mark { width: 42px; height: 42px; border-radius: 14px; background: var(--green); display: grid; place-items: center; color: white; transform: rotate(-3deg); box-shadow: 0 8px 20px rgba(37,94,74,.2); }
     .brand-mark svg { width: 22px; }
-    .profile { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.62); border: 1px solid white; padding: 7px 10px 7px 7px; border-radius: 16px; }
+    .profile { display: flex; align-items: center; gap: 10px; background: rgba(255,255,255,.62); border: 1px solid white; padding: 7px 10px 7px 7px; border-radius: 16px; cursor: pointer; color: var(--ink); }
     .avatar { width: 34px; height: 34px; border-radius: 11px; display: grid; place-items: center; background: var(--lime); font-weight: 800; font-size: 12px; }
     .profile span { font-size: 13px; font-weight: 700; }
+    .account-menu { position: absolute; right: 28px; top: 82px; width: min(310px,calc(100vw - 28px)); padding: 10px; border: 1px solid white; border-radius: 18px; background: white; box-shadow: var(--shadow); z-index: 12; display: none; }
+    .account-menu.open { display: grid; gap: 7px; }
+    .account-row { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: #f5f7f1; font-size: 11px; }
+    .account-row.current { background: #eef6dc; color: var(--green); font-weight: 800; }
+    .account-row.locked { color: #a2aaa3; cursor: not-allowed; }
+    .account-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .account-actions { display: flex; gap: 7px; }
+    .account-action { flex: 1; border: 1px solid var(--line); border-radius: 11px; padding: 9px; background: white; color: var(--ink); font-size: 10px; font-weight: 800; cursor: pointer; }
+    .cloud-status { color: var(--muted); padding: 3px 6px; font-size: 9px; text-align: center; }
+    .auth-screen { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 22px; background: var(--paper); }
+    .auth-screen.hidden { display: none; }
+    .auth-card { width: min(440px,100%); padding: 34px; border: 1px solid white; border-radius: 28px; background: var(--card); box-shadow: var(--shadow); text-align: center; }
+    .auth-card .brand-mark { margin: 0 auto 22px; }
+    .auth-card h2 { margin: 0; font-size: 30px; letter-spacing: -.045em; }
+    .auth-card p { margin: 12px 0 22px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+    .google-signin { width: 100%; border: 0; border-radius: 14px; padding: 13px; background: var(--green); color: white; font-weight: 800; cursor: pointer; }
+    .auth-error { min-height: 18px; margin-top: 12px; color: #a33d3d; font-size: 10px; }
     .top-actions { display: flex; align-items: center; gap: 9px; }
     .view-link { border: 1px solid var(--line); border-radius: 12px; padding: 9px 11px; color: var(--ink); background: rgba(255,255,255,.7); text-decoration: none; font-size: 11px; font-weight: 800; }
     .view-link:hover { border-color: var(--green); }
@@ -209,8 +226,9 @@
   <main class="app">
     <header class="topbar">
       <div class="brand"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5"/><path d="M8 8h8M8 12h6"/></svg></div> My Week</div>
-      <div class="top-actions"><div class="nav-switch"><button class="nav-tab active" id="scheduleTab">My Week</button><button class="nav-tab" id="mailTab">Mail</button></div><a class="view-link" id="viewLink" href="?view=teacher">Teacher view</a><div class="profile"><div class="avatar">Y7</div><span>Year 7</span></div></div>
+      <div class="top-actions"><div class="nav-switch"><button class="nav-tab active" id="scheduleTab">My Week</button><button class="nav-tab" id="mailTab">Mail</button></div><a class="view-link" id="viewLink" href="?view=teacher">Teacher view</a><button class="profile" id="profileButton" type="button"><div class="avatar" id="profileAvatar">Y7</div><span id="profileName">Sign in</span></button></div>
     </header>
+    <div class="account-menu" id="accountMenu"><div id="rosterList"></div><div class="cloud-status" id="cloudStatus">Cloud is waiting for sign-in</div><div class="account-actions"><button class="account-action" id="signOutButton" type="button">Sign out</button></div></div>
     <div class="teacher-banner">Read-only teacher view · Personal reminders and editing controls are hidden</div>
 
     <div class="schedule-view" id="scheduleView"><section class="hero">
@@ -257,15 +275,15 @@
     <section class="mail-view" id="mailView">
       <div class="mail-hero"><div><div class="eyebrow">School inbox</div><h1>Mail that<br>matters.</h1></div><a class="gmail-link" href="https://mail.google.com/mail/u/0/#search/from%3A%40proedschool.com+-from%3Ame" target="_blank" rel="noopener">Open filtered Gmail ↗</a></div>
       <div class="mail-panel">
-        <div class="mail-status"><span><strong>School inbox filter</strong> · miron.d@proedschool.com</span><span>Only @proedschool.com</span></div>
+        <div class="mail-status"><span><strong>Private school inbox</strong> · opens in your signed-in Google account</span><span>Only school mail</span></div>
         <div class="mail-list">
-          <article class="mail-item"><div class="mail-avatar">CR</div><div class="mail-copy"><strong>Cynthia</strong><span>Fwd: CONTACT BAWA BALI WEBSITE FROM Miron — Other</span></div><time class="mail-date">29 May</time></article>
-          <article class="mail-item"><div class="mail-avatar" style="background:var(--purple)">NR</div><div class="mail-copy"><strong>Nandita Rebello</strong><span>Invitation: pilot group meeting</span></div><time class="mail-date">1 Jun</time></article>
-          <article class="mail-item"><div class="mail-avatar" style="background:var(--lime)">JF</div><div class="mail-copy"><strong>Justeen Felsted</strong><span>Video shared with you: “20260522_141501”</span></div><time class="mail-date">26 May</time></article>
+          <article class="mail-item"><div class="mail-avatar">✉</div><div class="mail-copy"><strong>Your messages stay private</strong><span>Open filtered Gmail to see messages from your school account.</span></div><time class="mail-date">Secure</time></article>
         </div>
       </div>
     </section>
   </main>
+
+  <div class="auth-screen" id="authScreen"><div class="auth-card"><div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19V6.5A2.5 2.5 0 0 1 6.5 4H20v14H6.5A2.5 2.5 0 0 0 4 20.5"/><path d="M8 8h8M8 12h6"/></svg></div><h2>Your private school week</h2><p>Sign in with your <strong>@proedschool.com</strong> Google account. Your schedule and reminders will be stored separately and cannot be opened by another student.</p><button class="google-signin" id="googleSignIn" type="button">Continue with Google</button><div class="auth-error" id="authError"></div></div></div>
 
   <div class="modal" id="modal" role="dialog" aria-modal="true">
     <div class="modal-card"><div class="modal-top"><span class="modal-tag" id="modalTag">Class</span><button class="close" id="closeModal">×</button></div><h2 id="modalTitle"></h2><div class="modal-sub" id="modalTeacher"></div><div class="detail-grid"><div class="detail"><small>Time</small><strong id="modalTime"></strong></div><div class="detail"><small>Room</small><strong id="modalRoom"></strong></div><div class="detail"><small>Duration</small><strong>As scheduled</strong></div><div class="detail"><small>Status</small><strong>On schedule</strong></div></div><button class="change-btn" id="changeClass" type="button">Change</button></div>
@@ -308,7 +326,14 @@
     </form>
   </div>
 
-  <script>
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+    import { getFirestore, doc, getDoc, setDoc, collection, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+    const firebaseApp=initializeApp({apiKey:'AIzaSyCzsw-s2ScfSrmfjdxI38v_mRZPGHjAFkM',authDomain:'school-week-f73e8.firebaseapp.com',projectId:'school-week-f73e8',storageBucket:'school-week-f73e8.firebasestorage.app',messagingSenderId:'1023102623425',appId:'1:1023102623425:web:cd59c5775e9125a39b7e40',measurementId:'G-K8ZEV38G5S'});
+    const auth=getAuth(firebaseApp), db=getFirestore(firebaseApp), provider=new GoogleAuthProvider();
+    provider.setCustomParameters({hd:'proedschool.com',prompt:'select_account'});
+    let cloudUser=null, cloudReady=false, saveTimer=null;
     const el = id => document.getElementById(id);
     const teacherView=new URLSearchParams(location.search).get('view')==='teacher';
     if(teacherView){document.body.classList.add('teacher-view');el('viewLink').textContent='Student view';el('viewLink').href=location.pathname}
@@ -362,6 +387,33 @@
     let selectedDay = 0;
     const now = new Date();
     const baseMonday = new Date(now); baseMonday.setHours(0,0,0,0); baseMonday.setDate(now.getDate() - ((now.getDay()+6)%7));
+    const schoolEmail=email=>/^[^@]+@proedschool\.com$/i.test(email||'');
+    function setCloudStatus(text){el('cloudStatus').textContent=text}
+    function saveCloud(){
+      localStorage.setItem('myWeekSchedule',JSON.stringify(plans));
+      localStorage.setItem('myWeekReminder',el('reminderText').textContent);
+      if(!cloudUser||!cloudReady)return;
+      clearTimeout(saveTimer);setCloudStatus('Saving…');
+      saveTimer=setTimeout(async()=>{try{await setDoc(doc(db,'users',cloudUser.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()},{merge:true});setCloudStatus('Saved privately in the cloud')}catch(e){console.error(e);setCloudStatus('Could not save — kept on this device')}},350);
+    }
+    async function loadRoster(){
+      const holder=el('rosterList');holder.innerHTML='';
+      try{const snap=await getDocs(collection(db,'roster'));snap.forEach(entry=>{const data=entry.data();const row=document.createElement('div');row.className='account-row '+(entry.id===cloudUser.uid?'current':'locked');row.innerHTML=`<div class="avatar">${(data.name||'?').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase()}</div><span>${data.name||'Student'}${entry.id===cloudUser.uid?' · You':' · Private'}</span>`;holder.append(row)})}catch(e){console.error(e)}
+    }
+    async function startCloud(user){
+      cloudUser=user;const name=user.displayName||user.email.split('@')[0];
+      el('profileName').textContent=name;el('profileAvatar').textContent=name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();el('authScreen').classList.add('hidden');setCloudStatus('Loading your private schedule…');
+      const profile={name,email:user.email,role:'student',photoURL:user.photoURL||''};
+      await setDoc(doc(db,'users',user.uid),profile,{merge:true});await setDoc(doc(db,'roster',user.uid),profile,{merge:true});
+      const cloudDoc=await getDoc(doc(db,'users',user.uid,'private','app'));
+      if(cloudDoc.exists()){const data=cloudDoc.data();if(Array.isArray(data.schedule)&&data.schedule.length===5)plans=data.schedule;if(data.reminder)el('reminderText').textContent=data.reminder}else{await setDoc(doc(db,'users',user.uid,'private','app'),{schedule:plans,reminder:el('reminderText').textContent,updatedAt:Date.now()})}
+      cloudReady=true;setCloudStatus('Saved privately in the cloud');await loadRoster();render();
+    }
+    el('googleSignIn').onclick=async()=>{el('authError').textContent='';try{const result=await signInWithPopup(auth,provider);if(!schoolEmail(result.user.email)){await signOut(auth);el('authError').textContent='Please use your @proedschool.com school account.'}}catch(e){console.error(e);el('authError').textContent=e.code==='auth/popup-closed-by-user'?'Sign-in was cancelled.':`Could not sign in (${e.code||'unknown error'}). Please try again.`}};
+    el('profileButton').onclick=()=>el('accountMenu').classList.toggle('open');
+    el('signOutButton').onclick=()=>signOut(auth);
+    document.addEventListener('click',e=>{if(!el('accountMenu').contains(e.target)&&!el('profileButton').contains(e.target))el('accountMenu').classList.remove('open')});
+    onAuthStateChanged(auth,async user=>{cloudReady=false;if(!user||!schoolEmail(user.email)){el('authScreen').classList.remove('hidden');el('profileName').textContent='Sign in';return}try{await startCloud(user)}catch(e){console.error(e);el('authError').textContent='Cloud access is not ready yet. Please try again.';el('authScreen').classList.remove('hidden')}});
 
     const formatMonth = d => d.toLocaleDateString('en-GB',{month:'long'});
     const getMonday = () => { const d = new Date(baseMonday); d.setDate(d.getDate()+weekOffset*7); return d; };
@@ -442,7 +494,7 @@
       const targetDay=editingClass ? editingClass.day : selectedDay;
       if(editingClass)plans[targetDay][editingClass.index]=updatedClass;else plans[targetDay].push(updatedClass);
       plans[targetDay].sort((a,b)=>a.start.localeCompare(b.start));
-      localStorage.setItem('myWeekSchedule',JSON.stringify(plans));
+      saveCloud();
       e.currentTarget.reset(); el('startTime').value='08:30'; el('endTime').value='09:20';
       editingClass=null; closeAddModal(); render();
     };
@@ -452,7 +504,7 @@
     el('changeReminder').onclick=()=>{el('reminderInput').value=el('reminderText').textContent;el('reminderModal').classList.add('open');setTimeout(()=>el('reminderInput').focus(),50)};
     el('closeReminder').onclick=closeReminder;
     el('reminderModal').onclick=e=>{if(e.target===el('reminderModal'))closeReminder()};
-    el('reminderForm').onsubmit=e=>{e.preventDefault();const text=el('reminderInput').value.trim();el('reminderText').textContent=text;localStorage.setItem('myWeekReminder',text);closeReminder()};
+    el('reminderForm').onsubmit=e=>{e.preventDefault();const text=el('reminderInput').value.trim();el('reminderText').textContent=text;saveCloud();closeReminder()};
     document.addEventListener('keydown',e=>{if(e.key==='Escape'){el('modal').classList.remove('open');closeAddModal();closeReminder()}});
     el('prevWeek').onclick=()=>{weekOffset--;render()}; el('nextWeek').onclick=()=>{weekOffset++;render()};
     const todayIndex=(now.getDay()+6)%7; selectedDay=todayIndex<5?todayIndex:0; render();
